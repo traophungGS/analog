@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tập Đọc Đồng Hồ ⏰</title>
+    <title>Tập Đọc Đồng Hồ</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Font Family -->
@@ -77,7 +77,7 @@
                     ⏰
                 </div>
                 <div>
-                    <h1 class="text-2xl sm:text-3xl font-bold text-brand-pink tracking-wide">BÉ TẬP ĐỌC ĐỒNG HỒ</h1>
+                    <h1 class="text-2xl sm:text-3xl font-bold text-brand-pink tracking-wide">TẬP ĐỌC ĐỒNG HỒ</h1>
                     <p class="text-xs sm:text-sm text-slate-500 font-medium">Luyện tập 24H & Giờ hơn / Giờ kém</p>
                 </div>
             </div>
@@ -297,7 +297,7 @@
     </main>
 
     <footer class="mt-6 text-center text-xs text-slate-500 font-medium">
-        Ứng dụng học đọc đồng hồ chuẩn chương trình Toán Tiểu học
+        Ứng dụng học đọc đồng hồ chuẩn chương trình Toán Tiểu học 🌟
     </footer>
 
     <!-- JavaScript Logic -->
@@ -476,13 +476,13 @@
             if (currentMinute <= 30) {
                 badge.className = "w-full py-1.5 px-3 rounded-xl text-center text-xs font-bold uppercase tracking-wider bg-emerald-100 text-emerald-800 border border-emerald-300";
                 badge.textContent = "QUY TẮC BẮT BUỘC: ĐỌC GIỜ HƠN";
-                label.textContent = "giờ hơn";
+                label.textContent = "giờ";
                 hint.textContent = 'Nhập dạng "Giờ" + "giờ" + "Phút" (Ví dụ: 14 giờ 20 phút)';
             } else {
                 badge.className = "w-full py-1.5 px-3 rounded-xl text-center text-xs font-bold uppercase tracking-wider bg-rose-100 text-rose-800 border border-rose-300";
                 badge.textContent = "QUY TẮC BẮT BUỘC: ĐỌC GIỜ KÉM";
                 label.textContent = "giờ kém";
-                hint.textContent = 'Nhập dạng "Giờ" + "giờ kém" + "Phút thiếu" (Ví dụ: 14:45 ➔ 15 giờ kém 15 phút)';
+                hint.textContent = 'Nhập dạng "Giờ + 1" + "giờ kém" + "60 - Phút" (Ví dụ: 14:45 ➔ 15 giờ kém 15 phút)';
             }
         }
 
@@ -540,58 +540,62 @@
                 const userHour = parseInt(document.getElementById('input-hour-24').value, 10);
                 const userMin = parseInt(document.getElementById('input-minute-24').value, 10);
 
+                // STRICT CHECK: Hour MUST strictly match 24h format (e.g., 22 instead of 10 for night)
                 if (userHour === currentHour24 && userMin === currentMinute) {
                     isCorrect = true;
                 }
 
-                // Detailed Explanation
+                // Detailed Explanation based on attempt
                 if (currentHour24 >= 13) {
                     explanationHTML = `
-                        <p class="font-bold text-indigo-700 mb-1">💡 Hướng dẫn đổi sang giờ 24h:</p>
-                        <p>Đồng hồ kim chỉ số <b>${hour12}</b> vào <b>${period.name.toLowerCase()}</b>.</p>
-                        <p class="mt-1 font-semibold text-purple-800">👉 Công thức: ${hour12} + 12 = <b>${currentHour24} giờ</b>.</p>
-                        <p class="mt-1">Thời gian đúng: <b>${currentHour24}:${formattedMinute}</b>.</p>
+                        <p class="font-bold text-indigo-700 mb-1">💡 Hướng dẫn quy đổi giờ 24H (${period.name}):</p>
+                        <p>Kim giờ chỉ số <b>${hour12}</b> vào <b>${period.name.toLowerCase()}</b>.</p>
+                        <p class="mt-1 font-bold text-purple-800">👉 Bắt buộc quy đổi 24H: ${hour12} + 12 = <b>${currentHour24} giờ</b>.</p>
+                        ${userHour === hour12 ? `<p class="mt-1 text-rose-600 font-bold">⚠️ Bạn nhập ${userHour} giờ là thuộc hệ 12h. Vào ${period.name.toLowerCase()} phải nhập ${currentHour24} giờ!</p>` : ''}
+                        <p class="mt-1">Đáp án đúng chính xác: <b>${currentHour24}:${formattedMinute}</b>.</p>
                     `;
                 } else {
                     explanationHTML = `
-                        <p class="font-bold text-amber-700 mb-1">💡 Hướng dẫn:</p>
-                        <p>Vào <b>${period.name.toLowerCase()}</b> (00:00 đến 12:00), giữ nguyên số giờ trên mặt đồng hồ: <b>${currentHour24} giờ ${formattedMinute} phút</b>.</p>
+                        <p class="font-bold text-amber-700 mb-1">💡 Hướng dẫn (${period.name}):</p>
+                        <p>Vào <b>${period.name.toLowerCase()}</b> (00:00 đến 12:00), số giờ giữ nguyên là <b>${currentHour24} giờ ${formattedMinute} phút</b>.</p>
                     `;
                 }
 
             } else {
-                // Strict Text Mode (Giờ Hơn or Giờ Kém)
+                // Strict Text Mode (Giờ Hơn or Giờ Kém) in 24h System
                 const userHour = parseInt(document.getElementById('txt-hour').value, 10);
                 const userMin = parseInt(document.getElementById('txt-minute').value, 10);
 
                 if (currentMinute <= 30) {
-                    // MUST BE HOUR PAST: e.g. 14 giờ 20 phút (accepts 14h or 2h)
-                    if (userMin === currentMinute && (userHour === currentHour24 || userHour === hour12)) {
+                    // MUST BE HOUR PAST strictly in 24h system (e.g. 22 giờ 20 phút)
+                    if (userMin === currentMinute && userHour === currentHour24) {
                         isCorrect = true;
                     }
 
                     explanationHTML = `
-                        <p class="font-bold text-emerald-800 mb-1">💡 Đáp án Giờ Hơn đúng:</p>
-                        <p class="text-base font-bold text-emerald-700">👉 ${currentHour24} giờ ${currentMinute} phút <span class="text-xs font-normal text-slate-600">(hoặc ${hour12} giờ ${currentMinute} phút)</span></p>
-                        <p class="mt-1">Vì số phút ≤ 30, quy tắc yêu cầu đọc dạng <b>Giờ Hơn</b>.</p>
+                        <p class="font-bold text-emerald-800 mb-1">💡 Đáp án Giờ Hơn chuẩn 24H:</p>
+                        <p class="text-base font-bold text-emerald-700">👉 ${currentHour24} giờ ${currentMinute} phút</p>
+                        ${userHour === hour12 ? `<p class="mt-1 text-rose-600 font-bold">⚠️ Bạn nhập ${userHour} giờ là hệ 12h. Vào ${period.name.toLowerCase()} bắt buộc phải là <b>${currentHour24} giờ</b>!</p>` : ''}
+                        <p class="mt-1 text-xs text-slate-600">Quy tắc: Phút ≤ 30 ➔ Đọc dạng Giờ Hơn (hệ 24h).</p>
                     `;
                 } else {
-                    // MUST BE HOUR TO: e.g. 14:45 -> 15 giờ kém 15 phút (accepts 15h or 3h)
-                    const expectedKemHour12 = (hour12 % 12) + 1;
+                    // MUST BE HOUR TO strictly in 24h system (e.g. 21:45 -> 22 giờ kém 15 phút)
                     const expectedKemHour24 = (currentHour24 + 1) % 24;
                     const expectedKemMin = 60 - currentMinute;
 
-                    if (userMin === expectedKemMin && (userHour === expectedKemHour12 || userHour === expectedKemHour24)) {
+                    if (userMin === expectedKemMin && userHour === expectedKemHour24) {
                         isCorrect = true;
                     }
 
                     explanationHTML = `
-                        <p class="font-bold text-rose-800 mb-1">💡 Đáp án Giờ Kém đúng:</p>
-                        <p class="text-base font-bold text-rose-700">👉 ${expectedKemHour24} giờ kém ${expectedKemMin} phút <span class="text-xs font-normal text-slate-600">(hoặc ${expectedKemHour12} giờ kém ${expectedKemMin} phút)</span></p>
+                        <p class="font-bold text-rose-800 mb-1">💡 Đáp án Giờ Kém chuẩn 24H:</p>
+                        <p class="text-base font-bold text-rose-700">👉 ${expectedKemHour24} giờ kém ${expectedKemMin} phút</p>
                         <div class="mt-2 text-xs space-y-1 bg-rose-50 p-2 rounded-xl border border-rose-200">
-                            <p><b>Cách tính giờ kém:</b></p>
-                            <p>• Số giờ tới = ${hour12} + 1 = <b>${expectedKemHour12} giờ</b> (hoặc ${currentHour24 + 1}h)</p>
-                            <p>• Số phút thiếu = 60 - ${currentMinute} = <b>${expectedKemKem = expectedKemMin} phút</b></p>
+                            <p><b>Cách tính giờ kém theo hệ 24H:</b></p>
+                            <p>• Giờ hiện tại: ${currentHour24}:${formattedMinute} (${period.name.toLowerCase()})</p>
+                            <p>• Giờ tiếp theo (24H): ${currentHour24} + 1 = <b>${expectedKemHour24} giờ</b></p>
+                            <p>• Phút kém: 60 - ${currentMinute} = <b>${expectedKemMin} phút</b></p>
+                            ${userHour === ((hour12 % 12) + 1) ? `<p class="mt-1 text-rose-600 font-bold">⚠️ Lưu ý: Phải tính giờ tiếp theo theo mốc 24H (chọn ${expectedKemHour24} giờ thay vì ${((hour12 % 12) + 1)} giờ)!</p>` : ''}
                         </div>
                     `;
                 }
@@ -622,8 +626,8 @@
 
                 feedbackBox.className = "rounded-3xl p-4 sm:p-5 shadow-lg border-4 transition-all duration-300 bg-green-50 border-green-400 text-green-900";
                 feedbackIcon.textContent = "🎉";
-                feedbackTitle.textContent = "CHÍNH XÁC!";
-                feedbackDetail.textContent = `Em đã làm rất tốt ở ${period.name.toLowerCase()}! ✨`;
+                feedbackTitle.textContent = "CHÍNH XÁC! EM GIỎI QUÁ!";
+                feedbackDetail.textContent = `Đã đọc chuẩn thời gian 24H của ${period.name.toLowerCase()}! ✨`;
 
             } else {
                 streak = 0;
@@ -632,7 +636,7 @@
                 feedbackBox.className = "rounded-3xl p-4 sm:p-5 shadow-lg border-4 transition-all duration-300 bg-rose-50 border-rose-400 text-rose-900";
                 feedbackIcon.textContent = "💪";
                 feedbackTitle.textContent = "CHƯA CHÍNH XÁC, CÙNG XEM GIẢI THÍCH NHÉ!";
-                feedbackDetail.textContent = `Đồng hồ đang chỉ ${currentHour24}:${formattedMinute} (${period.name.toLowerCase()}).`;
+                feedbackDetail.textContent = `Thời gian đúng của ${period.name.toLowerCase()} phải theo hệ 24H.`;
             }
 
             // Update Scoreboard
