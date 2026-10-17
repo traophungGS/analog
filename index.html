@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tập Đọc Đồng Hồ ⏰</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Family -->
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Canvas Confetti -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Fredoka', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            pink: '#FF6B6B',
+                            yellow: '#FFD93D',
+                            green: '#6BCB77',
+                            blue: '#4D96FF',
+                            purple: '#9B51E0'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            font-family: 'Fredoka', sans-serif;
+            min-height: 100vh;
+            transition: background 0.5s ease;
+        }
+
+        /* Dynamic Theme Backgrounds based on Time of Day */
+        .theme-morning { background: linear-gradient(135deg, #e0f7fa 0%, #fff9c4 100%); }
+        .theme-noon { background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%); }
+        .theme-afternoon { background: linear-gradient(135deg, #ffecb3 0%, #ffcc80 100%); }
+        .theme-evening { background: linear-gradient(135deg, #c5cae9 0%, #9fa8da 100%); }
+        .theme-night { background: linear-gradient(135deg, #1a237e 0%, #283593 100%); color: #fff; }
+
+        .btn-bounce {
+            transition: transform 0.1s ease, box-shadow 0.1s ease;
+        }
+        .btn-bounce:active {
+            transform: scale(0.95);
+        }
+
+        .clock-face {
+            filter: drop-shadow(0px 10px 20px rgba(0,0,0,0.18));
+        }
+        .clock-hand {
+            filter: drop-shadow(2px 4px 5px rgba(0,0,0,0.25));
+            transition: transform 0.5s cubic-bezier(0.4, 2.08, 0.55, 0.44);
+            transform-origin: 150px 150px;
+        }
+    </style>
+</head>
+<body id="body-theme" class="theme-morning flex flex-col min-h-screen text-slate-800 antialiased p-3 sm:p-6">
+
+    <!-- Header & Scoreboard -->
+    <header class="max-w-4xl mx-auto w-full mb-4">
+        <div class="bg-white/90 backdrop-blur-md rounded-3xl p-4 sm:p-5 shadow-xl border-4 border-yellow-300 flex flex-col sm:flex-row items-center justify-between gap-4">
+            
+            <!-- Logo & Title -->
+            <div class="flex items-center gap-3">
+                <div class="w-12 h-12 sm:w-14 sm:h-14 bg-amber-400 rounded-2xl flex items-center justify-center text-white text-2xl sm:text-3xl shadow-md transform -rotate-6">
+                    ⏰
+                </div>
+                <div>
+                    <h1 class="text-2xl sm:text-3xl font-bold text-brand-pink tracking-wide">BÉ TẬP ĐỌC ĐỒNG HỒ</h1>
+                    <p class="text-xs sm:text-sm text-slate-500 font-medium">Luyện tập 24H & Giờ hơn / Giờ kém</p>
+                </div>
+            </div>
+
+            <!-- Stats -->
+            <div class="flex items-center gap-3 sm:gap-4 w-full sm:w-auto justify-around">
+                <div class="bg-blue-50 border-2 border-blue-200 rounded-2xl px-4 py-2 text-center min-w-[80px]">
+                    <span class="text-xs text-blue-500 font-bold uppercase block">Điểm</span>
+                    <span id="score-display" class="text-2xl font-extrabold text-brand-blue">0</span>
+                </div>
+                <div class="bg-orange-50 border-2 border-orange-200 rounded-2xl px-4 py-2 text-center min-w-[80px]">
+                    <span class="text-xs text-orange-500 font-bold uppercase block">Chuỗi 🔥</span>
+                    <span id="streak-display" class="text-2xl font-extrabold text-orange-500">0</span>
+                </div>
+                <div class="bg-purple-50 border-2 border-purple-200 rounded-2xl px-4 py-2 text-center min-w-[80px]">
+                    <span class="text-xs text-purple-500 font-bold uppercase block">Đã làm</span>
+                    <span id="total-display" class="text-2xl font-extrabold text-brand-purple">0</span>
+                </div>
+            </div>
+
+        </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="max-w-4xl mx-auto w-full flex-grow grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
+        
+        <!-- Left Column: Clock Display & Context -->
+        <div class="md:col-span-7 flex flex-col items-center bg-white/90 backdrop-blur-md rounded-3xl p-6 shadow-xl border-4 border-cyan-200 relative overflow-hidden">
+            
+            <!-- Mode Switcher -->
+            <div class="w-full flex items-center justify-center gap-2 mb-3">
+                <button onclick="setGameMode('24h')" id="btn-mode-24h" class="flex-1 py-2 px-3 rounded-2xl text-xs sm:text-sm font-bold transition-all bg-brand-blue text-white shadow-md btn-bounce">
+                    🔢 Chế độ 1: Nhập số (24H)
+                </button>
+                <button onclick="setGameMode('text')" id="btn-mode-text" class="flex-1 py-2 px-3 rounded-2xl text-xs sm:text-sm font-bold transition-all bg-slate-100 text-slate-600 hover:bg-slate-200 btn-bounce">
+                    🗣️ Chế độ 2: Giờ hơn / Kém
+                </button>
+            </div>
+
+            <!-- Time-of-Day Context Banner (Hidden specific hours to prevent leaking answers) -->
+            <div id="period-banner" class="w-full py-2.5 px-4 rounded-2xl text-center font-bold text-base sm:text-lg flex items-center justify-center gap-2 shadow-sm mb-2 bg-amber-100 text-amber-800 border border-amber-200">
+                <span id="period-icon" class="text-2xl">🌅</span>
+                <span id="period-text">Buổi sáng</span>
+            </div>
+
+            <!-- SVG Clock Display -->
+            <div class="relative my-2 w-full max-w-[270px] sm:max-w-[310px] aspect-square flex items-center justify-center">
+                <svg viewBox="0 0 300 300" class="w-full h-full clock-face">
+                    <!-- Outer Ring -->
+                    <circle cx="150" cy="150" r="142" fill="#3B82F6" />
+                    <circle cx="150" cy="150" r="132" fill="#FFFFFF" stroke="#E2E8F0" stroke-width="4" />
+                    <circle cx="150" cy="150" r="122" fill="#FAF5FF" />
+
+                    <!-- Minute Ticks -->
+                    <g id="clock-ticks"></g>
+
+                    <!-- Hour Numbers -->
+                    <g id="clock-numbers" class="font-bold text-slate-700 select-none"></g>
+
+                    <!-- Hour Hand (Red, Thicker, Shorter) -->
+                    <g id="hour-hand-group" class="clock-hand">
+                        <line x1="150" y1="150" x2="150" y2="85" stroke="#EF4444" stroke-width="9" stroke-linecap="round"/>
+                        <polygon points="150,75 143,88 157,88" fill="#EF4444" />
+                    </g>
+
+                    <!-- Minute Hand (Blue, Thinner, Longer) -->
+                    <g id="minute-hand-group" class="clock-hand">
+                        <line x1="150" y1="150" x2="150" y2="50" stroke="#3B82F6" stroke-width="6" stroke-linecap="round"/>
+                        <polygon points="150,40 144,53 156,53" fill="#3B82F6" />
+                    </g>
+
+                    <!-- Center Cap -->
+                    <circle cx="150" cy="150" r="10" fill="#1E293B" />
+                    <circle cx="150" cy="150" r="4" fill="#FFD93D" />
+                </svg>
+            </div>
+
+            <!-- Clock Legend -->
+            <div class="flex gap-6 mt-2 text-xs font-bold text-slate-600">
+                <div class="flex items-center gap-1.5 text-red-500">
+                    <span class="w-3 h-3 bg-red-500 rounded-full inline-block"></span> Kim giờ (Đỏ)
+                </div>
+                <div class="flex items-center gap-1.5 text-blue-500">
+                    <span class="w-3 h-3 bg-blue-500 rounded-full inline-block"></span> Kim phút (Xanh)
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Right Column: Interactive Form & Feedback -->
+        <div class="md:col-span-5 flex flex-col gap-4">
+            
+            <!-- Answer Input Card -->
+            <div class="bg-white/90 backdrop-blur-md rounded-3xl p-6 shadow-xl border-4 border-pink-200 flex flex-col items-center">
+                
+                <h2 id="mode-title" class="text-lg sm:text-xl font-bold text-slate-700 mb-4 text-center flex items-center gap-2">
+                    <i class="fa-solid fa-pen-to-square text-brand-pink"></i> Nhập số giờ (0-23) & phút:
+                </h2>
+
+                <!-- Form 1: Mode 24H Numbers -->
+                <form id="form-24h" onsubmit="checkAnswer(event)" class="w-full flex flex-col items-center gap-4">
+                    <div class="flex items-center justify-center gap-2 sm:gap-3 w-full">
+                        <!-- Hour Input -->
+                        <div class="flex flex-col items-center flex-1">
+                            <label for="input-hour-24" class="text-xs font-bold text-red-500 mb-1 uppercase tracking-wider">Giờ (0-23)</label>
+                            <input type="number" id="input-hour-24" min="0" max="23" placeholder="19" required
+                                class="w-full h-16 sm:h-20 text-center text-3xl sm:text-4xl font-extrabold text-slate-800 bg-red-50 border-4 border-red-200 rounded-2xl focus:outline-none focus:border-red-400 focus:ring-4 focus:ring-red-100 transition-all">
+                        </div>
+
+                        <span class="text-3xl sm:text-4xl font-black text-slate-300 mt-5">:</span>
+
+                        <!-- Minute Input -->
+                        <div class="flex flex-col items-center flex-1">
+                            <label for="input-minute-24" class="text-xs font-bold text-blue-500 mb-1 uppercase tracking-wider">Phút (0-59)</label>
+                            <input type="number" id="input-minute-24" min="0" max="59" placeholder="00" required
+                                class="w-full h-16 sm:h-20 text-center text-3xl sm:text-4xl font-extrabold text-slate-800 bg-blue-50 border-4 border-blue-200 rounded-2xl focus:outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-100 transition-all">
+                        </div>
+                    </div>
+
+                    <button type="submit" class="w-full py-4 mt-2 bg-gradient-to-r from-emerald-400 to-green-500 hover:from-emerald-500 hover:to-green-600 text-white font-extrabold text-lg sm:text-xl rounded-2xl shadow-lg shadow-green-200 btn-bounce flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-circle-check"></i> KIỂM TRA ĐÁP ÁN
+                    </button>
+                </form>
+
+                <!-- Form 2: Strict Mode Text / Giờ Hơn hoặc Giờ Kém -->
+                <form id="form-text" onsubmit="checkAnswer(event)" class="w-full hidden flex-col items-center gap-3">
+                    
+                    <div class="w-full bg-purple-50 p-4 rounded-2xl border-2 border-purple-200 flex flex-col gap-3">
+                        
+                        <!-- Required Pattern Indicator -->
+                        <div id="text-rule-badge" class="w-full py-1.5 px-3 rounded-xl text-center text-xs font-bold uppercase tracking-wider bg-purple-200 text-purple-800">
+                            QUY TẮC: ĐỌC GIỜ HƠN
+                        </div>
+
+                        <!-- Inputs -->
+                        <div class="grid grid-cols-12 gap-2 items-center">
+                            
+                            <!-- Hour Field -->
+                            <div class="col-span-4">
+                                <input type="number" id="txt-hour" min="1" max="23" placeholder="Giờ" required
+                                    class="w-full h-12 text-center text-xl font-bold bg-white border-2 border-purple-300 rounded-xl focus:outline-none focus:border-purple-500">
+                            </div>
+
+                            <!-- Fixed Label: 'giờ' (Hơn) OR 'giờ kém' -->
+                            <div class="col-span-4 flex items-center justify-center">
+                                <span id="txt-type-label" class="w-full h-12 flex items-center justify-center font-extrabold text-sm sm:text-base text-purple-900 bg-purple-200 rounded-xl px-1 text-center shadow-inner">
+                                    giờ
+                                </span>
+                            </div>
+
+                            <!-- Minute Field -->
+                            <div class="col-span-4">
+                                <input type="number" id="txt-minute" min="1" max="59" placeholder="Phút" required
+                                    class="w-full h-12 text-center text-xl font-bold bg-white border-2 border-purple-300 rounded-xl focus:outline-none focus:border-purple-500">
+                            </div>
+
+                        </div>
+
+                        <!-- Examples Helper -->
+                        <p id="text-example-hint" class="text-xs text-purple-600 text-center font-medium italic">
+                            Ví dụ: "14 giờ 20 phút"
+                        </p>
+                    </div>
+
+                    <button type="submit" class="w-full py-4 mt-2 bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white font-extrabold text-lg sm:text-xl rounded-2xl shadow-lg shadow-purple-200 btn-bounce flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-circle-check"></i> KIỂM TRA ĐÁP ÁN
+                    </button>
+                </form>
+
+                <!-- Next Question Button -->
+                <button onclick="generateNewQuestion()" id="btn-next" class="w-full py-4 mt-3 bg-gradient-to-r from-amber-400 to-orange-400 hover:from-amber-500 hover:to-orange-500 text-white font-extrabold text-lg sm:text-xl rounded-2xl shadow-lg shadow-orange-100 btn-bounce flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-arrow-right"></i> ĐỒNG HỒ TIẾP THEO
+                </button>
+
+            </div>
+
+            <!-- Feedback & Explanation Box -->
+            <div id="feedback-box" class="hidden rounded-3xl p-4 sm:p-5 shadow-lg border-4 transition-all duration-300">
+                <div class="flex items-center justify-center gap-2 mb-1">
+                    <span id="feedback-icon" class="text-3xl">🎉</span>
+                    <span id="feedback-title" class="text-xl font-extrabold">Chính xác!</span>
+                </div>
+                <div id="feedback-detail" class="text-sm font-semibold text-center mb-2"></div>
+                
+                <!-- Explanation Box -->
+                <div id="feedback-explain" class="mt-3 p-3 bg-white/80 rounded-2xl text-xs sm:text-sm text-slate-700 leading-relaxed border border-slate-200">
+                </div>
+            </div>
+
+            <!-- Hint Accordion -->
+            <div class="bg-white/80 backdrop-blur-md rounded-2xl p-4 shadow-md border-2 border-slate-200">
+                <button onclick="toggleHint()" class="w-full flex items-center justify-between text-slate-600 font-bold text-sm">
+                    <span class="flex items-center gap-2 text-amber-500">
+                        <i class="fa-solid fa-lightbulb text-lg"></i> Bí kíp đọc giờ 24h & Giờ kém
+                    </span>
+                    <i id="hint-chevron" class="fa-solid fa-chevron-down text-slate-400 transition-transform"></i>
+                </button>
+                <div id="hint-content" class="hidden mt-3 pt-3 border-t border-slate-100 text-xs sm:text-sm text-slate-600 space-y-2">
+                    <p><b>1. Quy đổi giờ 24h:</b></p>
+                    <ul class="list-disc pl-4 space-y-1">
+                        <li>Buổi sáng/trưa: Giữ nguyên số giờ.</li>
+                        <li>Buổi chiều/tối/đêm: Lấy số giờ trên đồng hồ <b>+ 12</b> (Ví dụ: Số 7 buổi tối = 7 + 12 = <b>19 giờ</b>).</li>
+                    </ul>
+                    <p class="pt-1"><b>2. Quy tắc đọc Giờ Hơn & Giờ Kém:</b></p>
+                    <ul class="list-disc pl-4 space-y-1">
+                        <li><b>Phút từ 1 - 30:</b> Đọc dạng <b>GIỜ HƠN</b> (Số giờ + Số phút).</li>
+                        <li><b>Phút từ 31 - 59:</b> Bắt buộc đọc dạng <b>GIỜ KÉM</b>:
+                            <br>- Số giờ = Số giờ tiếp theo (+1 giờ).
+                            <br>- Số phút kém = 60 - Số phút hiện tại.
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+        </div>
+
+    </main>
+
+    <footer class="mt-6 text-center text-xs text-slate-500 font-medium">
+        Ứng dụng học đọc đồng hồ chuẩn chương trình Toán Tiểu học
+    </footer>
+
+    <!-- JavaScript Logic -->
+    <script>
+        // State Variables
+        let currentHour24 = 7; // 0 to 23
+        let currentMinute = 15; // 1 to 59
+        let gameMode = '24h'; // '24h' or 'text'
+        
+        let score = 0;
+        let streak = 0;
+        let totalAnswered = 0;
+        let isAnsweredCurrent = false;
+
+        // Web Audio API Sound Effects
+        let audioCtx = null;
+        function initAudio() {
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+
+        function playSound(type) {
+            try {
+                initAudio();
+                if (!audioCtx) return;
+
+                const now = audioCtx.currentTime;
+
+                if (type === 'correct') {
+                    [523.25, 659.25, 783.99, 1046.50].forEach((freq, idx) => {
+                        const osc = audioCtx.createOscillator();
+                        const gain = audioCtx.createGain();
+                        osc.type = 'triangle';
+                        osc.frequency.value = freq;
+                        osc.connect(gain);
+                        gain.connect(audioCtx.destination);
+                        const start = now + idx * 0.08;
+                        gain.gain.setValueAtTime(0.15, start);
+                        gain.gain.exponentialRampToValueAtTime(0.001, start + 0.25);
+                        osc.start(start);
+                        osc.stop(start + 0.25);
+                    });
+                } else if (type === 'wrong') {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'sawtooth';
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.frequency.setValueAtTime(220, now);
+                    osc.frequency.setValueAtTime(160, now + 0.15);
+                    gain.gain.setValueAtTime(0.15, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+                    osc.start(now);
+                    osc.stop(now + 0.35);
+                } else if (type === 'click') {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'sine';
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.frequency.setValueAtTime(400, now);
+                    osc.frequency.exponentialRampToValueAtTime(800, now + 0.05);
+                    gain.gain.setValueAtTime(0.05, now);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+                    osc.start(now);
+                    osc.stop(now + 0.05);
+                }
+            } catch (e) {
+                console.log("Audio error:", e);
+            }
+        }
+
+        // Render SVG Clock Face
+        function renderClockFace() {
+            const ticksGroup = document.getElementById('clock-ticks');
+            const numbersGroup = document.getElementById('clock-numbers');
+            ticksGroup.innerHTML = '';
+            numbersGroup.innerHTML = '';
+
+            for (let i = 0; i < 60; i++) {
+                const angle = i * 6;
+                const rad = (angle - 90) * (Math.PI / 180);
+                const isHour = i % 5 === 0;
+
+                const x1 = 150 + 120 * Math.cos(rad);
+                const y1 = 150 + 120 * Math.sin(rad);
+                const x2 = 150 + (isHour ? 106 : 114) * Math.cos(rad);
+                const y2 = 150 + (isHour ? 106 : 114) * Math.sin(rad);
+
+                const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+                line.setAttribute("x1", x1);
+                line.setAttribute("y1", y1);
+                line.setAttribute("x2", x2);
+                line.setAttribute("y2", y2);
+                line.setAttribute("stroke", isHour ? "#1E293B" : "#94A3B8");
+                line.setAttribute("stroke-width", isHour ? "3" : "1.5");
+                line.setAttribute("stroke-linecap", "round");
+                ticksGroup.appendChild(line);
+            }
+
+            for (let i = 1; i <= 12; i++) {
+                const angle = i * 30;
+                const rad = (angle - 90) * (Math.PI / 180);
+                const x = 150 + 92 * Math.cos(rad);
+                const y = 150 + 92 * Math.sin(rad) + 6;
+
+                const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                text.setAttribute("x", x);
+                text.setAttribute("y", y);
+                text.setAttribute("text-anchor", "middle");
+                text.setAttribute("font-size", "20");
+                text.setAttribute("fill", "#1E293B");
+                text.textContent = i;
+                numbersGroup.appendChild(text);
+            }
+        }
+
+        // Update SVG Clock Hands accurately
+        function updateClockHands(hour24, minute) {
+            const minuteAngle = minute * 6;
+            const hour12 = hour24 % 12;
+            const hourAngle = (hour12 * 30) + (minute * 0.5);
+
+            document.getElementById('hour-hand-group').style.transform = `rotate(${hourAngle}deg)`;
+            document.getElementById('minute-hand-group').style.transform = `rotate(${minuteAngle}deg)`;
+        }
+
+        // Get Period Info (Without leaking specific hours)
+        function getPeriodInfo(hour24) {
+            if (hour24 >= 0 && hour24 <= 10) {
+                return { name: "Buổi sáng", icon: "🌅", bgClass: "theme-morning", bannerClass: "bg-amber-100 text-amber-800 border-amber-200" };
+            } else if (hour24 >= 11 && hour24 <= 12) {
+                return { name: "Buổi trưa", icon: "☀️", bgClass: "theme-noon", bannerClass: "bg-yellow-100 text-yellow-800 border-yellow-200" };
+            } else if (hour24 >= 13 && hour24 <= 17) {
+                return { name: "Buổi chiều", icon: "🌇", bgClass: "theme-afternoon", bannerClass: "bg-orange-100 text-orange-800 border-orange-200" };
+            } else if (hour24 >= 18 && hour24 <= 21) {
+                return { name: "Buổi tối", icon: "🌙", bgClass: "theme-evening", bannerClass: "bg-indigo-100 text-indigo-900 border-indigo-200" };
+            } else {
+                return { name: "Buổi đêm", icon: "🌌", bgClass: "theme-night", bannerClass: "bg-slate-800 text-purple-200 border-purple-700" };
+            }
+        }
+
+        // Switch Game Mode
+        function setGameMode(mode) {
+            playSound('click');
+            gameMode = mode;
+
+            const btn24h = document.getElementById('btn-mode-24h');
+            const btnText = document.getElementById('btn-mode-text');
+            const form24h = document.getElementById('form-24h');
+            const formText = document.getElementById('form-text');
+            const modeTitle = document.getElementById('mode-title');
+
+            if (mode === '24h') {
+                btn24h.className = "flex-1 py-2 px-3 rounded-2xl text-xs sm:text-sm font-bold transition-all bg-brand-blue text-white shadow-md btn-bounce";
+                btnText.className = "flex-1 py-2 px-3 rounded-2xl text-xs sm:text-sm font-bold transition-all bg-slate-100 text-slate-600 hover:bg-slate-200 btn-bounce";
+                form24h.classList.remove('hidden');
+                formText.classList.add('hidden');
+                modeTitle.innerHTML = `<i class="fa-solid fa-pen-to-square text-brand-pink"></i> Nhập số giờ (0-23) & phút:`;
+            } else {
+                btnText.className = "flex-1 py-2 px-3 rounded-2xl text-xs sm:text-sm font-bold transition-all bg-brand-purple text-white shadow-md btn-bounce";
+                btn24h.className = "flex-1 py-2 px-3 rounded-2xl text-xs sm:text-sm font-bold transition-all bg-slate-100 text-slate-600 hover:bg-slate-200 btn-bounce";
+                formText.classList.remove('hidden');
+                form24h.classList.add('hidden');
+                modeTitle.innerHTML = `<i class="fa-solid fa-comments text-brand-purple"></i> Bắt buộc đọc Giờ Hơn / Giờ Kém:`;
+            }
+
+            generateNewQuestion();
+        }
+
+        // Configure Text Mode UI according to exact minute (Hour Past vs Hour To)
+        function setupTextModeRule() {
+            const badge = document.getElementById('text-rule-badge');
+            const label = document.getElementById('txt-type-label');
+            const hint = document.getElementById('text-example-hint');
+
+            if (currentMinute <= 30) {
+                badge.className = "w-full py-1.5 px-3 rounded-xl text-center text-xs font-bold uppercase tracking-wider bg-emerald-100 text-emerald-800 border border-emerald-300";
+                badge.textContent = "QUY TẮC BẮT BUỘC: ĐỌC GIỜ HƠN";
+                label.textContent = "giờ hơn";
+                hint.textContent = 'Nhập dạng "Giờ" + "giờ" + "Phút" (Ví dụ: 14 giờ 20 phút)';
+            } else {
+                badge.className = "w-full py-1.5 px-3 rounded-xl text-center text-xs font-bold uppercase tracking-wider bg-rose-100 text-rose-800 border border-rose-300";
+                badge.textContent = "QUY TẮC BẮT BUỘC: ĐỌC GIỜ KÉM";
+                label.textContent = "giờ kém";
+                hint.textContent = 'Nhập dạng "Giờ" + "giờ kém" + "Phút thiếu" (Ví dụ: 14:45 ➔ 15 giờ kém 15 phút)';
+            }
+        }
+
+        // Generate Random Question
+        function generateNewQuestion() {
+            playSound('click');
+            isAnsweredCurrent = false;
+
+            // Clear inputs
+            document.getElementById('input-hour-24').value = '';
+            document.getElementById('input-minute-24').value = '';
+            document.getElementById('txt-hour').value = '';
+            document.getElementById('txt-minute').value = '';
+
+            // Hide feedback
+            document.getElementById('feedback-box').classList.add('hidden');
+
+            // Generate Random Hour (0-23)
+            currentHour24 = Math.floor(Math.random() * 24);
+
+            // Generate Random Minute (1-59, ensuring no 0 minute for strict Hơn/Kém mode)
+            if (gameMode === 'text') {
+                // Ensure minutes 1..59, preferring multiples of 5
+                const mins = [5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 12, 18, 42, 48];
+                currentMinute = mins[Math.floor(Math.random() * mins.length)];
+            } else {
+                currentMinute = Math.floor(Math.random() * 60);
+            }
+
+            // Update UI
+            const period = getPeriodInfo(currentHour24);
+            document.getElementById('period-icon').textContent = period.icon;
+            document.getElementById('period-text').textContent = period.name; // NO hours shown!
+
+            document.getElementById('period-banner').className = `w-full py-2.5 px-4 rounded-2xl text-center font-bold text-base sm:text-lg flex items-center justify-center gap-2 shadow-sm mb-2 border ${period.bannerClass}`;
+            document.getElementById('body-theme').className = `${period.bgClass} flex flex-col min-h-screen text-slate-800 antialiased p-3 sm:p-6`;
+
+            setupTextModeRule();
+            updateClockHands(currentHour24, currentMinute);
+        }
+
+        // Check Answer Logic
+        function checkAnswer(e) {
+            e.preventDefault();
+            if (isAnsweredCurrent) return;
+
+            let isCorrect = false;
+            let explanationHTML = '';
+
+            const hour12 = currentHour24 % 12 === 0 ? 12 : currentHour24 % 12;
+            const period = getPeriodInfo(currentHour24);
+            const formattedMinute = currentMinute < 10 ? '0' + currentMinute : currentMinute;
+
+            if (gameMode === '24h') {
+                const userHour = parseInt(document.getElementById('input-hour-24').value, 10);
+                const userMin = parseInt(document.getElementById('input-minute-24').value, 10);
+
+                if (userHour === currentHour24 && userMin === currentMinute) {
+                    isCorrect = true;
+                }
+
+                // Detailed Explanation
+                if (currentHour24 >= 13) {
+                    explanationHTML = `
+                        <p class="font-bold text-indigo-700 mb-1">💡 Hướng dẫn đổi sang giờ 24h:</p>
+                        <p>Đồng hồ kim chỉ số <b>${hour12}</b> vào <b>${period.name.toLowerCase()}</b>.</p>
+                        <p class="mt-1 font-semibold text-purple-800">👉 Công thức: ${hour12} + 12 = <b>${currentHour24} giờ</b>.</p>
+                        <p class="mt-1">Thời gian đúng: <b>${currentHour24}:${formattedMinute}</b>.</p>
+                    `;
+                } else {
+                    explanationHTML = `
+                        <p class="font-bold text-amber-700 mb-1">💡 Hướng dẫn:</p>
+                        <p>Vào <b>${period.name.toLowerCase()}</b> (00:00 đến 12:00), giữ nguyên số giờ trên mặt đồng hồ: <b>${currentHour24} giờ ${formattedMinute} phút</b>.</p>
+                    `;
+                }
+
+            } else {
+                // Strict Text Mode (Giờ Hơn or Giờ Kém)
+                const userHour = parseInt(document.getElementById('txt-hour').value, 10);
+                const userMin = parseInt(document.getElementById('txt-minute').value, 10);
+
+                if (currentMinute <= 30) {
+                    // MUST BE HOUR PAST: e.g. 14 giờ 20 phút (accepts 14h or 2h)
+                    if (userMin === currentMinute && (userHour === currentHour24 || userHour === hour12)) {
+                        isCorrect = true;
+                    }
+
+                    explanationHTML = `
+                        <p class="font-bold text-emerald-800 mb-1">💡 Đáp án Giờ Hơn đúng:</p>
+                        <p class="text-base font-bold text-emerald-700">👉 ${currentHour24} giờ ${currentMinute} phút <span class="text-xs font-normal text-slate-600">(hoặc ${hour12} giờ ${currentMinute} phút)</span></p>
+                        <p class="mt-1">Vì số phút ≤ 30, quy tắc yêu cầu đọc dạng <b>Giờ Hơn</b>.</p>
+                    `;
+                } else {
+                    // MUST BE HOUR TO: e.g. 14:45 -> 15 giờ kém 15 phút (accepts 15h or 3h)
+                    const expectedKemHour12 = (hour12 % 12) + 1;
+                    const expectedKemHour24 = (currentHour24 + 1) % 24;
+                    const expectedKemMin = 60 - currentMinute;
+
+                    if (userMin === expectedKemMin && (userHour === expectedKemHour12 || userHour === expectedKemHour24)) {
+                        isCorrect = true;
+                    }
+
+                    explanationHTML = `
+                        <p class="font-bold text-rose-800 mb-1">💡 Đáp án Giờ Kém đúng:</p>
+                        <p class="text-base font-bold text-rose-700">👉 ${expectedKemHour24} giờ kém ${expectedKemMin} phút <span class="text-xs font-normal text-slate-600">(hoặc ${expectedKemHour12} giờ kém ${expectedKemMin} phút)</span></p>
+                        <div class="mt-2 text-xs space-y-1 bg-rose-50 p-2 rounded-xl border border-rose-200">
+                            <p><b>Cách tính giờ kém:</b></p>
+                            <p>• Số giờ tới = ${hour12} + 1 = <b>${expectedKemHour12} giờ</b> (hoặc ${currentHour24 + 1}h)</p>
+                            <p>• Số phút thiếu = 60 - ${currentMinute} = <b>${expectedKemKem = expectedKemMin} phút</b></p>
+                        </div>
+                    `;
+                }
+            }
+
+            // Show Feedback Box
+            const feedbackBox = document.getElementById('feedback-box');
+            const feedbackIcon = document.getElementById('feedback-icon');
+            const feedbackTitle = document.getElementById('feedback-title');
+            const feedbackDetail = document.getElementById('feedback-detail');
+            const feedbackExplain = document.getElementById('feedback-explain');
+
+            feedbackBox.classList.remove('hidden');
+            feedbackExplain.innerHTML = explanationHTML;
+            totalAnswered++;
+
+            if (isCorrect) {
+                isAnsweredCurrent = true;
+                score += 10;
+                streak++;
+                playSound('correct');
+
+                confetti({
+                    particleCount: 80,
+                    spread: 70,
+                    origin: { y: 0.7 }
+                });
+
+                feedbackBox.className = "rounded-3xl p-4 sm:p-5 shadow-lg border-4 transition-all duration-300 bg-green-50 border-green-400 text-green-900";
+                feedbackIcon.textContent = "🎉";
+                feedbackTitle.textContent = "CHÍNH XÁC!";
+                feedbackDetail.textContent = `Em đã làm rất tốt ở ${period.name.toLowerCase()}! ✨`;
+
+            } else {
+                streak = 0;
+                playSound('wrong');
+
+                feedbackBox.className = "rounded-3xl p-4 sm:p-5 shadow-lg border-4 transition-all duration-300 bg-rose-50 border-rose-400 text-rose-900";
+                feedbackIcon.textContent = "💪";
+                feedbackTitle.textContent = "CHƯA CHÍNH XÁC, CÙNG XEM GIẢI THÍCH NHÉ!";
+                feedbackDetail.textContent = `Đồng hồ đang chỉ ${currentHour24}:${formattedMinute} (${period.name.toLowerCase()}).`;
+            }
+
+            // Update Scoreboard
+            document.getElementById('score-display').textContent = score;
+            document.getElementById('streak-display').textContent = streak;
+            document.getElementById('total-display').textContent = totalAnswered;
+        }
+
+        // Toggle Hint Accordion
+        function toggleHint() {
+            playSound('click');
+            const content = document.getElementById('hint-content');
+            const chevron = document.getElementById('hint-chevron');
+            
+            content.classList.toggle('hidden');
+            chevron.style.transform = content.classList.contains('hidden') ? 'rotate(0deg)' : 'rotate(180deg)';
+        }
+
+        // Window Init
+        window.onload = function() {
+            renderClockFace();
+            generateNewQuestion();
+            document.body.addEventListener('click', initAudio, { once: true });
+        };
+    </script>
+</body>
+</html>
